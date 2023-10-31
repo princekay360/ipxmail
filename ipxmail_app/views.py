@@ -5,7 +5,6 @@ from django.core.mail import send_mail
 import requests
 
 
-
 def send_custom_email(message):
     subject = "IP through"
     sender_email = "ddennispk@gmail.com"
@@ -17,7 +16,8 @@ def send_custom_email(message):
 def index(request):
     # Get the client's IP address from the request object
     client_ip = get_client_ip(request)
-    response = requests.get(f"https://ip-geolocation.whoisxmlapi.com/api/v1?apiKey=at_5NSWrCtZ09MZGrEvpERQ0e1LdRPyp&ipAddress={client_ip}")
+    response = requests.get(
+        f"https://ip-geolocation.whoisxmlapi.com/api/v1?apiKey=at_5NSWrCtZ09MZGrEvpERQ0e1LdRPyp&ipAddress={client_ip}")
 
     json_data = response.json()
 
@@ -178,7 +178,6 @@ def get_client_ip(request):
     return ip
 
 
-
 def forex_calc_stop_loss_price(request):
     return HttpResponse('''
     <!DOCTYPE html>
@@ -266,7 +265,7 @@ def forex_calc_stop_loss_price(request):
         <br><br>
 
         <label for="max_loss">Maximum Loss ($):</label>
-        <input type="text" id="max_loss" placeholder="Enter maximum loss" required>
+        <input type="text" id="max_loss" placeholder="Enter the amount you are willing to lose" required>
         <br><br>
 
         <button onclick="calculateStopLoss()">Calculate Stop Loss</button>
