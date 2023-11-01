@@ -192,7 +192,7 @@ def forex_calc_stop_loss_price(request):
         display: flex;
         justify-content: center;
         align-items: center;
-        height: 100vh;
+        min-height: 100vh;
     }
 
     .container {
@@ -203,6 +203,7 @@ def forex_calc_stop_loss_price(request):
         border-radius: 5px;
         padding: 20px;
         box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+         min-height: 450px;
     }
 
     h1 {
@@ -213,6 +214,7 @@ def forex_calc_stop_loss_price(request):
     label, input {
         display: block;
         margin-bottom: 15px;
+        font-weight: 600
     }
 
     input {
@@ -236,19 +238,79 @@ def forex_calc_stop_loss_price(request):
         transition: background-color 0.3s;
     }
 
-    button:hover {
-        background-color: #0056b3;
-    }
-
     p {
         text-align: center;
         font-weight: bold;
         color: #333;
     }
+    
+    .button-group {
+            display: flex;
+        }
 
+        .option-button {
+            border: 1px solid #e0e0e0;
+            background-color: #fff;
+            color: #333;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 0 10px;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+
+        .option-button.buy.selected {
+            background-color: #4caf5080;
+            color: #fff;
+        }
+        .option-button.sell.selected {
+            background-color: #ff000075;
+            color: #fff;
+        }
+        
+         /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 5px;
+            width: 18em;
+            height: 15em;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 0 10px;
+        }
+
+        .modal-button {
+            background-color: #007BFF;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 3px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
     @media (min-width: 768px) {
         .container {
             max-width: 400px;
+        }
+        
+        .modal-content {
+            padding: 10px;
         }
     }
 </style>
@@ -256,26 +318,52 @@ def forex_calc_stop_loss_price(request):
 <body>
     <div class="container">
         <h1>Stop Loss Calculator</h1>
+        
+        <label>What's Happening?</label>
+        <div class="button-group">
+            <button class="option-button buy selected" id="buyOption">Buying</button>
+            <button class="option-button sell" id="sellOption">Selling</button>
+        </div><br>
+        
         <label for="entry_point">Entry Point:</label>
         <input type="text" id="entry_point" placeholder="Enter entry point" required>
-        <br><br>
+        <br>
 
         <label for="position_size">Position Size:</label>
         <input type="text" id="position_size" placeholder="Enter position size" required>
-        <br><br>
+        <br>
 
         <label for="max_loss">Maximum Loss ($):</label>
         <input type="text" id="max_loss" placeholder="Enter the amount you are willing to lose" required>
-        <br><br>
+        <br>
 
         <button onclick="calculateStopLoss()">Calculate Stop Loss</button>
-        <br><br>
-
-        <p id="result"></p>
+        <br>
     </div>
+        
+        <!-- Result Modal -->
+    <div id="resultModal" class="modal">
+        <div class="modal-content">
+            <p id="result"></p>
+            <button class="modal-button" onclick="closeResultModal()">Close</button>
+        </div>
+    </div>
+    
 
     <script>
+    document.getElementById("buyOption").addEventListener("click", function() {
+            this.classList.add("selected");
+            document.getElementById("sellOption").classList.remove("selected");
+            document.getElementById("result").innerHTML = "";
+        });
+
+    document.getElementById("sellOption").addEventListener("click", function() {
+        this.classList.add("selected");
+        document.getElementById("buyOption").classList.remove("selected");
+        document.getElementById("result").innerHTML = "";
+    });
          function calculateStopLoss() {
+         const trade_type = document.querySelector(".option-button.selected").id === "buyOption" ? "buy" : "sell";
         const entry_point = parseFloat(document.getElementById("entry_point").value);
         const position_size = parseFloat(document.getElementById("position_size").value);
         const max_loss = parseFloat(document.getElementById("max_loss").value);
@@ -287,10 +375,24 @@ def forex_calc_stop_loss_price(request):
         if (position_size === 0) {
             document.getElementById("result").innerHTML = "Position size cannot be zero.";
         } else {
-            const stop_loss_price = entry_point - (max_loss / (position_size * 100000));
-                document.getElementById("result").innerHTML = `To limit your maximum loss to <b style="color:red">$${max_loss.toFixed(2)}</b>, set the Stop Loss price at <b style="color:red">${stop_loss_price.toFixed(4)}</b>`;
+            let stop_loss_price;
+            if (trade_type === "buy") {
+                stop_loss_price = entry_point - (max_loss / (position_size * 100000));
+            } else if (trade_type === "sell") {
+                stop_loss_price = entry_point + (max_loss / (position_size * 100000));
+            } else {
+                document.getElementById("result").innerHTML = "Invalid trade type selected.";
+                return;
+            }
+            document.getElementById("result").innerHTML = `To limit your maximum loss to <b style="color:red">$${max_loss.toFixed(2)}</b>, set the Stop Loss price at <b style="color:red">${stop_loss_price.toFixed(4)}</b>`;
+            document.getElementById("resultModal").style.display = "flex";
         }
     }
+    
+    function closeResultModal() {
+            // Close the result modal
+            document.getElementById("resultModal").style.display = "none";
+        }
 </script>
 </body>
 </html>
