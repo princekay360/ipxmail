@@ -218,7 +218,7 @@ def forex_calc_stop_loss_price(request):
     }
 
     input {
-        width: 96%;
+        width: 94%;
         padding: 10px;
         border: 1px solid #e0e0e0;
         border-radius: 3px;
