@@ -601,9 +601,10 @@ def forex_calc_take_profit_price(request):
             document.getElementById("resultModal").style.display = "flex";
         }
     }
-
+ 
     function closeResultModal() {
             // Close the result modal
+            document.getElementById("result").innerHTML = "";
             document.getElementById("resultModal").style.display = "none";
         }
 </script>
