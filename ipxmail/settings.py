@@ -38,7 +38,6 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'ipxmail_app',
     'mozamas',
-    'client',
 ]
 
 MIDDLEWARE = [

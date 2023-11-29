@@ -20,7 +20,6 @@ from django.urls import path, include
 
 
 urlpatterns = [
-    path('fx/', include('ipxmail_app.urls')),
-    path('mozama/', include('mozamas.urls')),
-    path('client/', include('client.urls')),
+    path('', include('ipxmail_app.urls')),
+    path('', include('mozamas.urls')),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
