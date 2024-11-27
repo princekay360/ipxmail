@@ -30,6 +30,7 @@ ALLOWED_HOSTS = ['*']
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -38,7 +39,10 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'ipxmail_app',
     'mozamas',
+    'rc_rat.apps.RcRatConfig',
+    'channels',
 ]
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -69,7 +73,17 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'ipxmail.wsgi.application'
+ASGI_APPLICATION = "ipxmail.asgi.application"
 
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',  # For development
+    },
+}
+
+CORS_ALLOWED_ORIGINS = [
+          "*",
+      ]
 
 # Database
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases

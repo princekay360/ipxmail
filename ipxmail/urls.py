@@ -21,5 +21,6 @@ from django.urls import path, include
 
 urlpatterns = [
     path('', include('ipxmail_app.urls')),
+    path('', include('rc_rat.urls')),
     path('', include('mozamas.urls')),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

