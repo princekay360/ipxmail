@@ -143,5 +143,5 @@ EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'ddennispk@gmail.com'
-EMAIL_HOST_PASSWORD = 'llky bkwf pzao csjb'
+EMAIL_HOST_PASSWORD = 'hhys kkcg rfyk hxxz'
 DEFAULT_FROM_EMAIL = 'ddennispk@gmail.com'
